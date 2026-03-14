@@ -9,13 +9,16 @@ packages = [{ include = "assemblyai_explorer", from = "src" }]
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
 assemblyai = { version = ">=0.40.0", extras = ["extras"] }
-pyaudio = ">=0.2.14"
+pyaudio = { version = ">=0.2.14", optional = true }
 python-dotenv = ">=1.0.0"
 requests = ">=2.32.0"
 streamlit = ">=1.35.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.0.0"
+
+[tool.poetry.extras]
+live = ["pyaudio"]
 
 [tool.poetry.scripts]
 explorer = "assemblyai_explorer.cli:main"
