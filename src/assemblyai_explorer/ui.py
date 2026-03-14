@@ -185,7 +185,7 @@ def render_streaming_tab():
     if not sdk_available:
         st.warning(
             "Streaming SDK components not available. "
-            "Install extras with: `pip install 'assemblyai[extras]' pyaudio`"
+            "Install PyAudio with: `pip install pyaudio`"
         )
         return
 
