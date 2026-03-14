@@ -8,7 +8,7 @@ packages = [{ include = "assemblyai_explorer", from = "src" }]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
-assemblyai = { version = ">=0.40.0", extras = ["extras"] }
+assemblyai = ">=0.40.0"
 pyaudio = { version = ">=0.2.14", optional = true }
 python-dotenv = ">=1.0.0"
 requests = ">=2.32.0"
