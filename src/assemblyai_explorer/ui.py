@@ -480,10 +480,11 @@ def render_debug_tab():
 
 
 def run_app():
+    st.set_page_config(page_title="Anub's AAI", page_icon="🍕", layout="wide")
     init_session_state(st.session_state)
     render_sidebar_history()
 
-    st.title("AssemblyAI Explorer")
+    st.title("Anub's AssemblyAI Explorer")
 
     if not API_KEY:
         st.error("ASSEMBLYAI_API_KEY not found. Add it to your .env file.")
