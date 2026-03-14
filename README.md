@@ -53,6 +53,12 @@ cp .env.example .env
 poetry run explorer
 ```
 
+To enable the **Live Streaming** tab locally, install the optional live-audio dependency:
+
+```bash
+poetry install --extras live
+```
+
 ### Tabs
 
 **Pre-recorded**
@@ -137,4 +143,5 @@ Tests cover payload composition rules, edge cases, and rendering helpers, the pu
 - Audio redirect URLs (302) do not work with the AssemblyAI upload endpoint, use a direct file URL or the file upload path.
 - LeMUR requires a paid plan. The notebook cell handles the 401 gracefully.
 - Live streaming requires PyAudio + PortAudio. On macOS: `brew install portaudio` then `pip install pyaudio`.
+- Streamlit Community Cloud does not reliably support building/running PyAudio. Deploy cloud usage for Pre-recorded/API Debug; use local runs for Live Streaming.
 - The delete cell in the notebook has an intentional `assert` guard so it cannot be run accidentally.
