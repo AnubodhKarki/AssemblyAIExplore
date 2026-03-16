@@ -11,9 +11,11 @@ from .api import (
     get_transcript_sentences,
     list_transcripts,
     poll_transcript_debug,
+    probe_audio_url,
     submit_transcript_debug,
     upload_file,
 )
+from .audio_quality import analyze_uploaded_audio, analyze_url_metadata
 from .config import API_KEY, DEFAULT_AUDIO_URL, LANGUAGE_OPTIONS, MODEL_OPTIONS, STREAMING_MODEL_OPTIONS
 from .payloads import build_params_snapshot, build_transcript_payload
 from .rendering import render_results
@@ -42,6 +44,22 @@ def render_sidebar_history():
                     render_results(item["result"], item["params"], allow_expanders=False)
 
 
+def render_audio_quality_report(report: dict):
+    st.markdown("### Audio Quality Check")
+    col_score, col_label = st.columns(2)
+    col_score.metric("Quality score", f"{report['score']}/100")
+    col_label.metric("Quality label", report["label"].upper())
+
+    warnings = report.get("warnings") or []
+    if warnings:
+        st.warning("\n".join(f"- {warning}" for warning in warnings))
+    else:
+        st.success("No obvious quality concerns detected from available metadata.")
+
+    with st.expander("Quality metrics", expanded=False):
+        st.json(report.get("metrics", {}))
+
+
 def render_prerecorded_tab():
     st.subheader("Audio Source")
     source_mode = st.radio("Input type", ["Default sample URL", "Paste a URL", "Upload a file"], horizontal=True)
@@ -56,6 +74,56 @@ def render_prerecorded_tab():
         audio_url = st.text_input("Audio URL", placeholder="https://...")
     else:
         uploaded_file = st.file_uploader("Upload audio/video file", type=["mp3", "wav", "m4a", "ogg", "mp4"])
+
+    source_signature = "default"
+    if source_mode == "Paste a URL":
+        source_signature = f"url::{(audio_url or '').strip()}"
+    elif source_mode == "Upload a file":
+        if uploaded_file is None:
+            source_signature = "upload::none"
+        else:
+            source_signature = f"upload::{uploaded_file.name}::{uploaded_file.size}"
+
+    if st.session_state.audio_quality_signature != source_signature:
+        st.session_state.audio_quality_signature = source_signature
+        st.session_state.audio_quality_report = None
+        st.session_state.audio_quality_probe_info = None
+
+    analyze_clicked = st.button("Analyze audio quality", key="analyze_audio_quality")
+    if analyze_clicked:
+        if source_mode == "Upload a file":
+            if not uploaded_file:
+                st.warning("Please upload a file before running quality analysis.")
+            else:
+                report = analyze_uploaded_audio(
+                    file_name=uploaded_file.name,
+                    file_type=uploaded_file.type,
+                    file_bytes=uploaded_file.getvalue(),
+                )
+                st.session_state.audio_quality_report = report
+                st.session_state.audio_quality_probe_info = None
+        else:
+            target_url = DEFAULT_AUDIO_URL if source_mode == "Default sample URL" else (audio_url or "").strip()
+            if not target_url:
+                st.warning("Please enter a URL before running quality analysis.")
+            else:
+                probe_body, probe_status, probe_ms = probe_audio_url(target_url)
+                report = analyze_url_metadata(url=target_url, probe={**probe_body, "status_code": probe_status})
+                st.session_state.audio_quality_report = report
+                st.session_state.audio_quality_probe_info = {
+                    "status": probe_status,
+                    "latency_ms": probe_ms,
+                    "method": probe_body.get("method"),
+                }
+
+    if st.session_state.audio_quality_report:
+        probe_info = st.session_state.audio_quality_probe_info
+        if probe_info:
+            st.caption(
+                f"URL probe — HTTP {probe_info['status']} · {probe_info['latency_ms']} ms · {probe_info['method']}"
+            )
+        render_audio_quality_report(st.session_state.audio_quality_report)
+        st.divider()
 
     st.subheader("Model & Language")
     col1, col2 = st.columns(2)
@@ -97,7 +165,7 @@ def render_prerecorded_tab():
             st.warning("Please upload a file.")
             return
         with st.spinner("Uploading file..."):
-            resolved_url = upload_file(uploaded_file.read())
+            resolved_url = upload_file(uploaded_file.getvalue())
         audio_source_label = uploaded_file.name
     elif source_mode == "Paste a URL":
         if not audio_url:
