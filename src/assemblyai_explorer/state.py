@@ -20,6 +20,9 @@ def init_session_state(session_state):
         ("stream_start_time", None),
         ("_stream_proc_pid", None),
         ("_stream_proc_exitcode", None),
+        ("audio_quality_report", None),
+        ("audio_quality_signature", None),
+        ("audio_quality_probe_info", None),
     ]:
         if key not in session_state:
             session_state[key] = default
